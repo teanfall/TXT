@@ -1,0 +1,6 @@
+{
+    "name": "API Preset Manager",
+    "description": "在API连接配置界面添加和管理自定义端点(URL)预设。",
+    "version": "1.0.0",
+    "author": "CodeGenius"
+}

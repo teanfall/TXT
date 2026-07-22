@@ -1,0 +1,28 @@
+
+.api-preset-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.api-preset-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: var(--SmartThemeBlurTintColor);
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+.api-preset-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.api-preset-item-name {
+    font-weight: bold;
+}
+.api-preset-item-url {
+    font-size: 0.85em;
+    opacity: 0.8;
+}

@@ -13,12 +13,17 @@ function savePresets() {
     saveSettingsDebounced();
 }
 
-// 获取当前激活的 URL 输入框 (适配 ST 不同的 API 界面)
+// 获取当前激活的 URL 输入框 (兼容 ST 各种不同的 API 界面)
 function getActiveUrlInput() {
-    const textInput = $('#api_url_text');
-    const normalInput = $('#api_url');
-    if (textInput.length && textInput.is(':visible')) return textInput;
-    if (normalInput.length && normalInput.is(':visible')) return normalInput;
+    // 涵盖 OpenAI, Claude, Kobold, TextGen 等常见 API 的输入框 ID
+    const selectors = ['#api_url_text', '#api_url', '#api_url_kobold', '#api_url_novel', '#api_url_textgen'];
+    for (let sel of selectors) {
+        const el = $(sel);
+        // 必须存在且在当前界面可见
+        if (el.length && el.is(':visible')) {
+            return el;
+        }
+    }
     return null;
 }
 
@@ -48,7 +53,7 @@ function addPreset() {
 function applyPreset(url) {
     const urlInput = getActiveUrlInput();
     if (urlInput) {
-        urlInput.val(url).trigger('input');
+        urlInput.val(url).trigger('input').trigger('change');
         toastr.success('已应用 API 预设');
     } else {
         toastr.error('无法应用：未找到 URL 输入框');
@@ -82,7 +87,6 @@ function showManagePopup() {
     const popup = new Popup(html, 1, null, { title: '管理 API 预设' });
     popup.show();
 
-    // 绑定弹出层内的按钮事件
     $('.apply-preset-btn').on('click', function() {
         applyPreset($(this).data('url'));
         popup.complete();
@@ -97,30 +101,34 @@ function showManagePopup() {
     });
 }
 
-// 注入 UI
-function injectUI() {
-    if ($('.api-preset-controls').length > 0) return; // 避免重复注入
-
-    const container = $('<div class="api-preset-controls"></div>');
-    const btnAdd = $('<button class="menu_button">添加</button>').on('click', addPreset);
-    const btnManage = $('<button class="menu_button">管理</button>').on('click', showManagePopup);
+// 强制注入 UI 的核心逻辑
+function ensureUI() {
+    const urlInput = getActiveUrlInput();
     
-    container.append($('<span>API 预设: </span>')).append(btnAdd).append(btnManage);
-
-    // 监听 DOM 变化，因为 ST 的 API 界面是动态切换的
-    const observer = new MutationObserver(() => {
-        const urlInput = getActiveUrlInput();
-        if (urlInput && $('.api-preset-controls').length === 0) {
+    if (urlInput) {
+        let container = $('#api-preset-manager-container');
+        
+        // 如果容器不存在，则创建
+        if (container.length === 0) {
+            container = $('<div id="api-preset-manager-container" class="api-preset-controls"></div>');
+            const btnAdd = $('<button class="menu_button">添加</button>').on('click', addPreset);
+            const btnManage = $('<button class="menu_button">管理</button>').on('click', showManagePopup);
+            container.append($('<span>API 预设: </span>')).append(btnAdd).append(btnManage);
+        }
+        
+        // 确保容器始终在当前可见的输入框正上方
+        // 如果容器的下一个元素不是当前的输入框，就把它移动过去
+        if (!container.next().is(urlInput)) {
             urlInput.before(container);
         }
-    });
-    
-    observer.observe(document.getElementById('api_settings') || document.body, { 
-        childList: true, 
-        subtree: true 
-    });
+    } else {
+        // 如果当前没有可见的输入框，隐藏或移除容器防止错位
+        $('#api-preset-manager-container').detach();
+    }
 }
 
 jQuery(async () => {
-    injectUI();
+    // 使用 setInterval 每 1 秒检查一次。
+    // 这是应对 ST 复杂且频繁变化的 UI 最稳妥的方法。
+    setInterval(ensureUI, 1000);
 });
